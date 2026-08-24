@@ -106,6 +106,8 @@ export function InputClearButton({
           }
         />
       }
+      onPointerDown={e => e.preventDefault()}
+      onMouseDown={e => e.preventDefault()}
       onClick={onClick}
       isIconOnly
       xstyle={[styles.button, xstyle]}
