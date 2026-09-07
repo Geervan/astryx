@@ -510,7 +510,7 @@ describe('Switch', () => {
   it('announces loading state while async changeAction is pending and clears when resolved', async () => {
     let resolveAction!: () => void;
     const changeAction = vi.fn(
-      () =>
+      async () =>
         new Promise<void>(resolve => {
           resolveAction = resolve;
         }),
