@@ -4,7 +4,7 @@
 
 /**
  * @file Switch.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, i18n (useTranslator)
  * @output Exports Switch component, SwitchProps, SwitchLabelPosition, SwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by Switch.test.tsx
  *
@@ -48,6 +48,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 const wrapperSizeStyles = stylex.create({
@@ -491,6 +492,7 @@ export function Switch({
   ref,
   ...rest
 }: SwitchProps) {
+  const t = useTranslator();
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -614,7 +616,10 @@ export function Switch({
           {isBusy && <Spinner size="sm" />}
         </div>
       </div>
-      {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
+      {/* Live region for busy/loading state announcements */}
+      <VisuallyHidden role="status" aria-live="polite">
+        {isBusy ? t('@astryx.switch.loading') : ''}
+      </VisuallyHidden>
     </div>
   );
 

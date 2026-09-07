@@ -18,6 +18,7 @@ import {
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
 
 interface InjectedRule {
   selector: string;
@@ -452,6 +453,94 @@ describe('Switch', () => {
       expect(
         document.querySelector('[data-astryx-live-region="assertive"]'),
       ).toHaveTextContent('Failed to save setting');
+    });
+  });
+
+  it('has a persistent live region that announces loading state when busy', () => {
+    const {container, rerender} = render(
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
+    );
+    const liveRegion = container.querySelector(
+      '[role="status"][aria-live="polite"]',
+    );
+    expect(liveRegion).toBeInTheDocument();
+    expect(liveRegion).toHaveTextContent('');
+
+    rerender(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    expect(liveRegion).toHaveTextContent('Loading');
+
+    rerender(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        isLoading={false}
+      />,
+    );
+    expect(liveRegion).toHaveTextContent('');
+  });
+
+  it('localizes the loading announcement through the i18n catalog', () => {
+    const {container} = render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.switch.loading': 'Chargement'}}}>
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isLoading
+        />
+      </InternationalizationProvider>,
+    );
+    const liveRegion = container.querySelector(
+      '[role="status"][aria-live="polite"]',
+    );
+    expect(liveRegion).toBeInTheDocument();
+    expect(liveRegion).toHaveTextContent('Chargement');
+  });
+
+  it('announces loading state while async changeAction is pending and clears when resolved', async () => {
+    let resolveAction!: () => void;
+    const changeAction = vi.fn(
+      () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+
+    const {container} = render(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        changeAction={changeAction}
+      />,
+    );
+    const liveRegion = container.querySelector(
+      '[role="status"][aria-live="polite"]',
+    );
+    expect(liveRegion).toHaveTextContent('');
+
+    const switchEl = screen.getByRole('switch');
+    fireEvent.click(switchEl);
+
+    expect(changeAction).toHaveBeenCalled();
+    expect(liveRegion).toHaveTextContent('Loading');
+
+    await waitFor(() => {
+      resolveAction();
+    });
+
+    await waitFor(() => {
+      expect(liveRegion).toHaveTextContent('');
     });
   });
 
