@@ -20,6 +20,7 @@ import {
   useId,
   useOptimistic,
   useTransition,
+  useEffect,
   type ChangeEvent,
   type FocusEvent,
   type ReactNode,
@@ -46,7 +47,7 @@ import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {VisuallyHidden} from '../VisuallyHidden';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useTranslator} from '../i18n';
 
@@ -505,6 +506,13 @@ export function Switch({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (isBusy) {
+      announce(t('@astryx.switch.loading'));
+    }
+  }, [announce, isBusy, t]);
+
   const isOn = optimisticValue === true;
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
@@ -616,10 +624,6 @@ export function Switch({
           {isBusy && <Spinner size="sm" />}
         </div>
       </div>
-      {/* Live region for busy/loading state announcements */}
-      <VisuallyHidden role="status" aria-live="polite">
-        {isBusy ? t('@astryx.switch.loading') : ''}
-      </VisuallyHidden>
     </div>
   );
 

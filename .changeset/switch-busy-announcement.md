@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Switch: mount the busy live region persistently and localize the loading announcement via `@astryx.switch.loading`.
+[fix] Switch: announce busy/loading states through the persistent `useAnnounce` live region and localize the announcement via `@astryx.switch.loading`.
 
 @Geervan

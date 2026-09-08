@@ -456,15 +456,14 @@ describe('Switch', () => {
     });
   });
 
-  it('has a persistent live region that announces loading state when busy', () => {
+  it('announces loading state through useAnnounce when busy', async () => {
     const {container, rerender} = render(
       <Switch label="Enable notifications" value={false} onChange={() => {}} />,
     );
-    const liveRegion = container.querySelector(
-      '[role="status"][aria-live="polite"]',
-    );
-    expect(liveRegion).toBeInTheDocument();
-    expect(liveRegion).toHaveTextContent('');
+    // Does not introduce a permanent live region DOM element per switch
+    expect(
+      container.querySelector('[role="status"][aria-live="polite"]'),
+    ).toBeNull();
 
     rerender(
       <Switch
@@ -474,21 +473,15 @@ describe('Switch', () => {
         isLoading
       />,
     );
-    expect(liveRegion).toHaveTextContent('Loading');
-
-    rerender(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-        isLoading={false}
-      />,
-    );
-    expect(liveRegion).toHaveTextContent('');
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Loading');
+    });
   });
 
-  it('localizes the loading announcement through the i18n catalog', () => {
-    const {container} = render(
+  it('localizes the loading announcement through the i18n catalog', async () => {
+    render(
       <InternationalizationProvider
         locale="fr"
         overrides={{fr: {'@astryx.switch.loading': 'Chargement'}}}>
@@ -500,14 +493,14 @@ describe('Switch', () => {
         />
       </InternationalizationProvider>,
     );
-    const liveRegion = container.querySelector(
-      '[role="status"][aria-live="polite"]',
-    );
-    expect(liveRegion).toBeInTheDocument();
-    expect(liveRegion).toHaveTextContent('Chargement');
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Chargement');
+    });
   });
 
-  it('announces loading state while async changeAction is pending and clears when resolved', async () => {
+  it('announces loading state while async changeAction is pending', async () => {
     let resolveAction!: () => void;
     const changeAction = vi.fn(
       async () =>
@@ -516,7 +509,7 @@ describe('Switch', () => {
         }),
     );
 
-    const {container} = render(
+    render(
       <Switch
         label="Enable notifications"
         value={false}
@@ -524,24 +517,18 @@ describe('Switch', () => {
         changeAction={changeAction}
       />,
     );
-    const liveRegion = container.querySelector(
-      '[role="status"][aria-live="polite"]',
-    );
-    expect(liveRegion).toHaveTextContent('');
 
     const switchEl = screen.getByRole('switch');
     fireEvent.click(switchEl);
 
     expect(changeAction).toHaveBeenCalled();
-    expect(liveRegion).toHaveTextContent('Loading');
-
     await waitFor(() => {
-      resolveAction();
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Loading');
     });
 
-    await waitFor(() => {
-      expect(liveRegion).toHaveTextContent('');
-    });
+    resolveAction();
   });
 
   it('calls onFocus and onBlur callbacks', async () => {
