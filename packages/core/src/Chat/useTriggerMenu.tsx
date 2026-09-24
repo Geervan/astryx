@@ -205,34 +205,33 @@ function findActiveTrigger(
   for (let i = textBeforeCursor.length - 1; i >= 0; i--) {
     const char = textBeforeCursor[i];
 
-    if (char === '\n' || PUNCTUATION_TERMINATORS.has(char)) {
+    if (char === '\n') {
       return null;
     }
 
-    if (!anyAllowsSpaces && char === ' ') {
+    if (!anyAllowsSpaces && (char === ' ' || char === '\t')) {
       return null;
     }
 
     for (const trigger of triggers) {
       if (char === trigger.character) {
         const prevChar = i > 0 ? textBeforeCursor[i - 1] : null;
-        if (prevChar === null || prevChar === ' ' || prevChar === '\n') {
+        if (prevChar === null || prevChar === ' ' || prevChar === '\n' || prevChar === '\t') {
           const query = textBeforeCursor.slice(i + 1);
 
-          for (let j = 0; j < query.length; j++) {
-            if (PUNCTUATION_TERMINATORS.has(query[j])) {
-              return null;
-            }
-          }
-
           if (trigger.allowSpaces) {
+            for (let j = 0; j < query.length; j++) {
+              if (PUNCTUATION_TERMINATORS.has(query[j])) {
+                return null;
+              }
+            }
             const words = query.trim().split(/\s+/).filter(Boolean);
             if (words.length > MAX_TRIGGER_WORDS) {
               return null;
             }
             return {trigger, query, triggerStart: i};
           } else {
-            if (query.includes(' ')) {
+            if (query.includes(' ') || query.includes('\t') || query.includes('\n')) {
               return null;
             }
             return {trigger, query, triggerStart: i};
@@ -540,7 +539,7 @@ export function useTriggerMenu(
 
     const {trigger, query, triggerStart} = found;
 
-    if (!state.isActive || state.activeTrigger !== trigger) {
+    if (!state.isActive || state.activeTrigger?.character !== trigger.character) {
       triggerStartRef.current = triggerStart;
       setState(prev => ({
         ...prev,
@@ -553,7 +552,7 @@ export function useTriggerMenu(
       searchItems(trigger, query);
       popover.show();
     } else if (state.query !== query) {
-      setState(prev => ({...prev, query}));
+      setState(prev => ({...prev, query, activeTrigger: trigger}));
       searchItems(trigger, query);
     }
   }, [

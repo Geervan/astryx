@@ -361,4 +361,58 @@ describe('useTriggerMenu', () => {
     });
     expect(result.current.state.isActive).toBe(false);
   });
+
+  // 13. Punctuation trigger characters (e.g. ':' emoji trigger) activate correctly
+  it('13. allows triggers configured with punctuation characters (e.g. ":")', async () => {
+    const emojiTrigger: ChatComposerTrigger = {
+      character: ':',
+      searchSource: createStaticSource([
+        {id: 'smile', label: 'smile'},
+        {id: 'wave', label: 'wave'},
+      ]),
+      onSelect: item => `:${item.label}:`,
+      allowSpaces: false,
+    };
+    const {result} = renderTriggerHook([emojiTrigger, createMentionTrigger()]);
+
+    await act(async () => {
+      setCursor(':smile');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.isActive).toBe(true);
+    expect(result.current.state.activeTrigger?.character).toBe(':');
+    expect(result.current.state.query).toBe('smile');
+  });
+
+  // 14. Non-opt-in triggers retain punctuation in queries (e.g. /v1.2, @john.doe)
+  it('14. allows punctuation in queries for triggers that do not opt into allowSpaces', async () => {
+    const singleTokenMention: ChatComposerTrigger = {
+      character: '@',
+      searchSource: createStaticSource([
+        {id: 'john.doe', label: 'john.doe'},
+      ]),
+      onSelect: item => `@${item.label}`,
+      allowSpaces: false,
+    };
+    const {result} = renderTriggerHook([singleTokenMention, createCommandTrigger()]);
+
+    // Command query with dot: /v1.2
+    await act(async () => {
+      setCursor('/v1.2');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.isActive).toBe(true);
+    expect(result.current.state.query).toBe('v1.2');
+
+    // Single-token mention query with dot: @john.doe
+    await act(async () => {
+      setCursor('@john.doe');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.isActive).toBe(true);
+    expect(result.current.state.query).toBe('john.doe');
+  });
 });
