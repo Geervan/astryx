@@ -2193,4 +2193,59 @@ describe('toast timer lifecycle (#3589)', () => {
       expect(announceSpy).toHaveBeenCalledWith('Toast A', 'polite');
     });
   });
+
+  describe('top-layer promotion', () => {
+    it('promotes the popover on mount and re-promotes when a toast is added', () => {
+      const showPopoverSpy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+      const hidePopoverSpy = vi.spyOn(HTMLElement.prototype, 'hidePopover');
+      try {
+        render(
+          <ToastViewport isTopLayer>
+            <ShowToastButton
+              options={{body: 'Top layer toast'}}
+              triggerLabel="Show"
+            />
+          </ToastViewport>,
+        );
+        expect(showPopoverSpy).toHaveBeenCalledTimes(1);
+
+        act(() => {
+          fireEvent.click(screen.getByText('Show'));
+        });
+
+        // Re-promotes by calling hidePopover then showPopover
+        expect(hidePopoverSpy).toHaveBeenCalledTimes(1);
+        expect(showPopoverSpy).toHaveBeenCalledTimes(2);
+      } finally {
+        showPopoverSpy.mockRestore();
+        hidePopoverSpy.mockRestore();
+      }
+    });
+
+    it('does not call popover methods when isTopLayer is false', () => {
+      const showPopoverSpy = vi.spyOn(HTMLElement.prototype, 'showPopover');
+      const hidePopoverSpy = vi.spyOn(HTMLElement.prototype, 'hidePopover');
+      try {
+        render(
+          <ToastViewport isTopLayer={false}>
+            <ShowToastButton
+              options={{body: 'Inline toast'}}
+              triggerLabel="Show"
+            />
+          </ToastViewport>,
+        );
+        expect(showPopoverSpy).not.toHaveBeenCalled();
+
+        act(() => {
+          fireEvent.click(screen.getByText('Show'));
+        });
+
+        expect(hidePopoverSpy).not.toHaveBeenCalled();
+        expect(showPopoverSpy).not.toHaveBeenCalled();
+      } finally {
+        showPopoverSpy.mockRestore();
+        hidePopoverSpy.mockRestore();
+      }
+    });
+  });
 });

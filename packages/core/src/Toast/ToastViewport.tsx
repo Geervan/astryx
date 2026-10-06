@@ -393,6 +393,28 @@ export function ToastViewport({
   // during SSR), so it is SSR-safe.
   const announce = useAnnounce();
 
+  // Promote the popover to the top layer. Elements in the top layer stack in
+  // insertion order; hiding and re-showing brings the viewport above any
+  // modal dialogs (showModal) that entered the top layer after this viewport mounted.
+  const promoteToTopLayer = useCallback(() => {
+    if (!isTopLayer) {
+      return;
+    }
+    const el = viewportRef.current;
+    if (el && typeof el.showPopover === 'function') {
+      try {
+        el.hidePopover();
+      } catch {
+        /* not showing */
+      }
+      try {
+        el.showPopover();
+      } catch {
+        /* already showing */
+      }
+    }
+  }, [isTopLayer]);
+
   const addToast = useCallback(
     (entry: ToastEntry) => {
       const {uniqueID, collisionBehavior = 'overwrite'} = entry.options;
@@ -413,6 +435,7 @@ export function ToastViewport({
         // else to the polite region (role="status") — mirrors Toast.tsx.
         announce(text, entry.options.type === 'error' ? 'assertive' : 'polite');
       }
+      promoteToTopLayer();
       // An overwrite swaps a new entry, with a new id, into the replaced
       // toast's place, so the old row leaves the DOM without ever being
       // dismissed. Its settled id is dropped by the prune below, which covers
@@ -428,7 +451,7 @@ export function ToastViewport({
         return [...prev, entry];
       });
     },
-    [announce],
+    [announce, promoteToTopLayer],
   );
 
   const removeToast = useCallback((id: string, reason: ToastDismissReason) => {

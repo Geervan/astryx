@@ -273,7 +273,7 @@ function checkEnvironmentImports(label, files, baseDir, knownGaps) {
   let checked = 0;
   for (const filePath of files) {
     checked++;
-    const rel = path.relative(baseDir, filePath);
+    const rel = path.relative(baseDir, filePath).replaceAll('\\', '/');
     const sources = importSources(filePath);
     /** @type {Set<string>} */
     const found = new Set();
@@ -425,7 +425,7 @@ function isApiExempt(filePath) {
   if (adapterExemptions.has(filePath)) return true;
   const bn = path.basename(filePath);
   if (bn.endsWith('.type.mjs')) return true;
-  const rel = path.relative(API, filePath);
+  const rel = path.relative(API, filePath).replaceAll('\\', '/');
   return rel === 'index.mjs' || rel === 'error.mjs' || rel === 'logger.mjs';
 }
 
@@ -533,7 +533,7 @@ const INV23_KNOWN_GAPS = new Map([
 let inv23Count = 0;
 for (const filePath of handlerFiles) {
   inv23Count++;
-  const rel = path.relative(HANDLER_DIR, filePath);
+  const rel = path.relative(HANDLER_DIR, filePath).replaceAll('\\', '/');
   const src = fs.readFileSync(filePath, 'utf8');
   /** @type {Set<string>} */
   const found = new Set();
