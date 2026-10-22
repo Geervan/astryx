@@ -462,9 +462,8 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
   const syncTabStops = useCallback(() => {
     const items = getItems();
     const enabled = items.filter(el => !isItemDisabled(el));
-    // A group with no enabled item still keeps its one Tab stop: disabled
-    // controls stay focusable and keep the enabled focus order (spec:AST-085
-    // FR1, FR7). Arrow keys still skip disabled items.
+    // A fully disabled group keeps its one Tab stop (spec:AST-085 FR1, FR7);
+    // arrow keys still skip disabled items.
     const candidates = enabled.length > 0 ? enabled : items;
     const current = candidates.find(el => el.getAttribute('tabindex') === '0');
     const tabbable = current ?? candidates[0];
