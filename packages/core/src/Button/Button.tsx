@@ -850,6 +850,7 @@ export function Button({
         {...sharedMergedProps}
         {...pressFeedback}
         {...props}
+        {...(isTrueDisabled ? {name: undefined} : null)}
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}

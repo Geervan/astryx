@@ -484,6 +484,48 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveAttribute('type', 'submit');
   });
 
+  it('withholds name while disabled so FormData omits the submitter (spec:AST-085 FR3)', () => {
+    const {rerender} = render(
+      <form data-testid="form">
+        <Button label="Save" type="submit" name="intent" value="save" />
+      </form>,
+    );
+    const form = screen.getByTestId<HTMLFormElement>('form');
+    const enabledButton = screen.getByRole('button', {name: 'Save'});
+    expect(enabledButton).toHaveAttribute('name', 'intent');
+    expect(new FormData(form, enabledButton).get('intent')).toBe('save');
+
+    rerender(
+      <form data-testid="form">
+        <Button
+          label="Save"
+          type="submit"
+          name="intent"
+          value="save"
+          isDisabled
+        />
+      </form>,
+    );
+    const disabledButton = screen.getByRole('button', {name: 'Save'});
+    expect(disabledButton).not.toHaveAttribute('name');
+    expect(disabledButton).toHaveAttribute('aria-disabled', 'true');
+    expect(disabledButton).not.toHaveAttribute('disabled');
+    expect(new FormData(form, disabledButton).get('intent')).toBeNull();
+
+    rerender(
+      <form data-testid="form">
+        <ButtonGroup label="Actions" isDisabled>
+          <Button label="Save" type="submit" name="intent" value="save" />
+        </ButtonGroup>
+      </form>,
+    );
+    const groupDisabledButton = screen.getByRole('button', {name: 'Save'});
+    expect(groupDisabledButton).not.toHaveAttribute('name');
+    expect(groupDisabledButton).toHaveAttribute('aria-disabled', 'true');
+    expect(groupDisabledButton).not.toHaveAttribute('disabled');
+    expect(new FormData(form, groupDisabledButton).get('intent')).toBeNull();
+  });
+
   it('uses aria-disabled instead of disabled when tooltip is present and button is disabled', () => {
     render(<Button label="Test" tooltip="Reason disabled" isDisabled />);
     const button = screen.getByRole('button');
