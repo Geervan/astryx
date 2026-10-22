@@ -1152,6 +1152,15 @@ describe('ListInput', () => {
 
     // The values stay readable — a disabled list still communicates content.
     expect(screen.getAllByRole('textbox')[0]).toHaveValue('Ada');
+
+    // The focusable reorder handle moves nothing from the keyboard
+    // (spec:AST-085 FR2).
+    const handle = screen.getByRole('button', {name: 'Reorder guest 1'});
+    fireEvent.keyDown(handle, {key: 'ArrowDown'});
+    fireEvent.keyDown(handle, {key: ' '});
+    fireEvent.keyDown(handle, {key: 'ArrowDown'});
+    expect(handle).not.toHaveAttribute('aria-pressed');
+    expect(screen.getAllByRole('textbox')[0]).toHaveValue('Ada');
     expect(onChange).not.toHaveBeenCalled();
   });
 

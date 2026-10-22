@@ -149,6 +149,10 @@ describe('Carousel', () => {
     expect(right).toBeInTheDocument();
     expect(left).toHaveAttribute('aria-disabled', 'true');
     expect(right).toHaveAttribute('aria-disabled', 'true');
+    // Disabled buttons stay focusable (spec:AST-085 FR1), so the hidden pill
+    // around each is inert: an invisible button is never a Tab stop.
+    expect(left.closest('[inert]')).not.toBeNull();
+    expect(right.closest('[inert]')).not.toBeNull();
   });
 
   describe('Shift + wheel horizontal scroll', () => {
