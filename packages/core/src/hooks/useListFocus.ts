@@ -462,6 +462,9 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     const items = getItems();
     const enabled = items.filter(el => !isItemDisabled(el));
     if (enabled.length === 0) {
+      for (const el of items) {
+        setTabIndex(el, -1);
+      }
       return;
     }
     const current = enabled.find(el => el.getAttribute('tabindex') === '0');

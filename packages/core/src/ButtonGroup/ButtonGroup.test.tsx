@@ -163,8 +163,14 @@ describe('ButtonGroup', () => {
     );
 
     expect(screen.getByRole('group')).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByRole('button', {name: 'Copy'})).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Cut'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Copy'})).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(screen.getByRole('button', {name: 'Cut'})).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('does not set aria-disabled when not disabled', () => {

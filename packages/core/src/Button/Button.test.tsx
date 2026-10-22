@@ -143,7 +143,8 @@ describe('Button', () => {
   it('keeps the dimmed treatment for explicitly disabled buttons', () => {
     render(<Button label="Submit" isDisabled />);
     const button = screen.getByRole('button');
-    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button.className).toContain('styles.inactive');
     expect(button.className).toContain('styles.disabled');
   });
@@ -615,21 +616,18 @@ describe('Button', () => {
     expect(handleKeyDown).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps native disabled (not aria-disabled) when isDisabled and not busy, even without a tooltip', () => {
+  it('uses aria-disabled (not native disabled) when isDisabled, even without a tooltip (AST-085)', () => {
     render(<Button label="Save" isDisabled />);
     const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('disabled');
-    expect(button).not.toHaveAttribute('aria-disabled');
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('keeps native disabled when isDisabled and isLoading are both true (isDisabled wins)', () => {
+  it('uses aria-disabled (not native disabled) when isDisabled and isLoading are both true', () => {
     render(<Button label="Save" isDisabled isLoading />);
     const button = screen.getByRole('button');
-    // "isDisabled behavior unchanged: that stays native disabled" — busy-only
-    // aria-disabled is only for the case where busy is the SOLE reason the
-    // button can't be clicked, not when it's also genuinely isDisabled.
-    expect(button).toHaveAttribute('disabled');
-    expect(button).not.toHaveAttribute('aria-disabled');
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('has a live region that announces loading state', () => {
@@ -822,11 +820,12 @@ describe('Button', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it('falls back to <button disabled> for a truly disabled href Button', () => {
+  it('falls back to <button> with aria-disabled for a disabled href Button', () => {
     render(<Button label="Docs" href="https://example.com" isDisabled />);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     const button = screen.getByRole('button', {name: 'Docs'});
-    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 });
 

@@ -548,9 +548,13 @@ export function Carousel({
     // The opposite button is the receiver. It is disabled only when the
     // carousel stopped overflowing entirely, which happens when its content
     // shrinks; the scroll container is then the nearest tab stop still inside
-    // the labelled region.
+    // the labelled region. Under AST-085 Button renders aria-disabled rather
+    // than native disabled.
+    const isOppositeDisabled =
+      opposite?.getAttribute('aria-disabled') === 'true' ||
+      opposite?.disabled === true;
     const receiver =
-      opposite != null && !opposite.disabled ? opposite : scrollElRef.current;
+      opposite != null && !isOppositeDisabled ? opposite : scrollElRef.current;
     if (receiver == null) {
       return;
     }
