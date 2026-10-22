@@ -504,9 +504,7 @@ export function Carousel({
   // the scroll, the position before it plus the step, and the settled position
   // reported by `scrollend` -- were each wrong somewhere, under reduced motion,
   // under mandatory scroll-snap, and on a browser that never fires the event.
-  // Running after the commit also makes the opposite button a valid receiver,
-  // which it is not during the press: at that moment it is still disabled and
-  // focus() on a disabled control does nothing. Ruled acceptable by the
+  // Ruled acceptable by the
   // maintainer, 2026-08-27, on the conditions encoded below: it acts only on
   // the transition that newly disables the focused button, it moves focus and
   // nothing else, and it cannot fire twice for one transition.
@@ -543,25 +541,16 @@ export function Carousel({
       return;
     }
 
-    const opposite =
-      side === 'start' ? endButtonRef.current : startButtonRef.current;
-    // The opposite button is the receiver. It is disabled only when the
-    // carousel stopped overflowing entirely, which happens when its content
-    // shrinks; the scroll container is then the nearest tab stop still inside
-    // the labelled region. Under AST-085 Button renders aria-disabled rather
-    // than native disabled.
-    const isOppositeDisabled =
-      opposite?.getAttribute('aria-disabled') === 'true' ||
-      opposite?.disabled === true;
-    const receiver =
-      opposite != null && !isOppositeDisabled ? opposite : scrollElRef.current;
+    // The scroll area is the receiver (component:Carousel FR2). It takes focus
+    // programmatically even when it is out of the tab order.
+    const receiver = scrollElRef.current;
     if (receiver == null) {
       return;
     }
 
     // One move per transition: clearing the tracker first means a re-render or
     // a StrictMode double-invoke re-runs this and returns at the `side == null`
-    // guard above. Focusing the receiver sets it again, to the other side.
+    // guard above.
     focusedNavRef.current = null;
     // preventScroll: a plain focus() scrolls its element into view, which on
     // the scroll container cancels the scroll the press just started.
@@ -668,7 +657,7 @@ export function Carousel({
                 // button mounted (stable layout); the inert pill takes it out
                 // of the tab order and a11y tree while it's visually hidden, so
                 // keyboard users don't land on an invisible control. The Effect
-                // above hands focus to the other button when the state behind
+                // above hands focus to the scroll area when the state behind
                 // this one flips it disabled.
                 isDisabled={!canScrollStart}
                 onFocus={() => {

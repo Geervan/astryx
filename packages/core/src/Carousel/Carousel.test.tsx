@@ -527,7 +527,7 @@ describe('Carousel', () => {
       fireEvent.scroll(el);
     }
 
-    it('hands focus to the opposite button when the edge disables the one in use', async () => {
+    it('hands focus to the scroll area when the edge disables the one in use', async () => {
       const user = userEvent.setup();
       render(
         <Carousel aria-label="Gallery">
@@ -544,7 +544,7 @@ describe('Carousel', () => {
       await user.click(next);
 
       expect(next).toHaveAttribute('aria-disabled', 'true');
-      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
+      expect(document.activeElement).toBe(getScroller());
       expect(document.activeElement).not.toBe(document.body);
     });
 
@@ -567,9 +567,7 @@ describe('Carousel', () => {
       await user.click(previous);
 
       expect(previous).toHaveAttribute('aria-disabled', 'true');
-      expect(document.activeElement).toBe(
-        screen.getByLabelText('Scroll right'),
-      );
+      expect(document.activeElement).toBe(getScroller());
     });
 
     it('hands off under RTL, where the scroll axis is inverted', async () => {
@@ -613,7 +611,7 @@ describe('Carousel', () => {
       await user.click(next);
 
       expect(next).toHaveAttribute('aria-disabled', 'true');
-      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
+      expect(document.activeElement).toBe(getScroller());
     });
 
     it('hands off when scroll-snap carries the container past what the press asked for', async () => {
@@ -634,7 +632,7 @@ describe('Carousel', () => {
       await user.click(next);
 
       expect(next).toHaveAttribute('aria-disabled', 'true');
-      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
+      expect(document.activeElement).toBe(getScroller());
     });
 
     it('falls back to the scroll container when the carousel stops overflowing', async () => {
@@ -718,7 +716,7 @@ describe('Carousel', () => {
       // rather than loosening the guard -- is caught.
       await user.click(screen.getByLabelText('Scroll right'));
 
-      expect(document.activeElement).toBe(screen.getByLabelText('Scroll left'));
+      expect(document.activeElement).toBe(getScroller());
     });
 
     it('does not move focus on a press that leaves the direction available', async () => {
@@ -765,8 +763,7 @@ describe('Carousel', () => {
         </Carousel>,
       );
       makeScrollable(getScroller(), 400);
-      const previous = screen.getByLabelText('Scroll left');
-      const focus = vi.spyOn(previous, 'focus');
+      const focus = vi.spyOn(getScroller(), 'focus');
 
       await user.click(screen.getByLabelText('Scroll right'));
 
@@ -806,8 +803,7 @@ describe('Carousel', () => {
       makeScrollable(getScroller(), 400);
       await user.click(screen.getByLabelText('Scroll right'));
 
-      const previous = screen.getByLabelText('Scroll left');
-      expect(document.activeElement).toBe(previous);
+      expect(document.activeElement).toBe(getScroller());
       // Park focus outside and re-render: the transition is spent, so nothing
       // may pull focus back in.
       const outside = document.createElement('button');
