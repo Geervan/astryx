@@ -54,10 +54,7 @@ owners separately from this repository gate.
 
 A DESIGNOWNER approves with an exact-head review or `/approve-spec <head>`,
 like every other owner; in a mixed PR every other applicable code or spec-owner
-group remains required. The existing
-gate may enable squash auto-merge only when every changed path is a recognized
-spec record, every required group has approved, and all branch checks pass.
-Normative assets and indexes are outside that scope; any code path prevents the
-spec-only auto-merge path.
+group remains required. The gate decides approval only; it never enables
+auto-merge.
 
 Use `docs/templates/knowledge/design-spec.md`.
