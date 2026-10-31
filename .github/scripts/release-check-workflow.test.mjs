@@ -97,6 +97,7 @@ function runs(
     'needs',
     'always',
     'cancelled',
+    'steps',
     `return Boolean(${expression});`,
   )(
     {
@@ -107,6 +108,21 @@ function runs(
     needs,
     () => true,
     () => cancelled,
+    // The scope step puts everything in scope outside a pull request.
+    {
+      scope: {
+        outputs: {
+          spec_only: 'false',
+          docsite_only: 'false',
+          tooling_only: 'false',
+          full_suite: 'true',
+          release_bump: 'false',
+          touches: 'true',
+          applies: 'true',
+          decided: 'true',
+        },
+      },
+    },
   );
 }
 

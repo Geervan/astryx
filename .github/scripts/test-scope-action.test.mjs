@@ -145,6 +145,7 @@ describe('per-job scope step', () => {
     expect(Object.keys(action.outputs).sort()).toEqual(
       [
         'applies',
+        'decided',
         'docsite_only',
         'full_suite',
         'release_bump',
@@ -274,6 +275,14 @@ describe('per-job scope step', () => {
       applies: 'true',
     });
     expect(messages.warning).toHaveLength(1);
+    expect(outputs.decided).toBe('false');
+  });
+
+  it('reports a decided scope when the classifier ran', async () => {
+    const {outputs} = await decide({
+      files: changed('docs/specs/AST-030/spec.md'),
+    });
+    expect(outputs.decided).toBe('true');
   });
 
   it('classifies a rename by both names, so a rename into specs is not spec-only', async () => {
