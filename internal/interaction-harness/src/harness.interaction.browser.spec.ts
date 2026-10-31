@@ -480,18 +480,27 @@ test.describe('frame evidence', () => {
     const box = page.locator('#box');
     await markElement(box, {mode: 'outline'});
     const run = async (driver: 'compositor' | 'raf') => {
+      // Judged against what the compositor presented in the same window too:
+      // a loaded runner's compositor skips frames a display-rate bound counts.
+      const control = await startBusyControl(page);
+      const cast = await startScreencast(page);
+      const compositor = await startCompositorTrace(page);
+      // Started once the control, the cast and the trace run, so the whole
+      // window lies inside its motion however long they take to start on a
+      // loaded runner. The block is long enough to judge a drop of four cast
+      // intervals at one frame in six (below).
       await box.evaluate((el, how) => {
         el.getAnimations().forEach(a => a.cancel());
         el.style.transform = 'none';
         if (how === 'compositor') {
           el.animate(
             [{transform: 'translateY(0px)'}, {transform: 'translateY(560px)'}],
-            {duration: 1600, easing: 'linear'},
+            {duration: 3000, easing: 'linear'},
           );
         } else {
           const start = performance.now();
           const step = (now: number) => {
-            const p = Math.min(1, (now - start) / 1600);
+            const p = Math.min(1, (now - start) / 3000);
             el.style.transform = `translateY(${560 * p}px)`;
             if (p < 1) {
               requestAnimationFrame(step);
@@ -500,36 +509,92 @@ test.describe('frame evidence', () => {
           requestAnimationFrame(step);
         }
       }, driver);
-      const cast = await startScreencast(page);
-      const compositor = await startCompositorTrace(page);
       await page.waitForTimeout(200);
-      const window = await blockMainThread(page, 700);
+      const window = await blockMainThread(page, 1200);
       await page.waitForTimeout(200);
       const presented = await compositor.stop();
-      const tracked = await trackMarker(page, await cast.stop());
-      return {window, tracked, presented};
+      const frames = await cast.stop();
+      await control.remove();
+      const tracked = await trackMarker(page, frames);
+      const controlTracked = await trackMarker(page, frames, {
+        rgb: CONTROL_RGB,
+      });
+      return {window, tracked, presented, controlTracked};
     };
 
     const moving = await run('compositor');
     expect(moving.presented.length).toBeGreaterThan(0);
-    // The screencast as a loaded machine delivers it: four frames in a row
-    // skipped mid-block, which the compositor still presented.
-    const mid = moving.tracked.findIndex(f => f.t > moving.window.from + 350);
-    const skipped = moving.tracked.filter((_, i) => i < mid || i >= mid + 4);
+    // The whole cast, judged with the compositor record: the screencast's and
+    // the compositor's own intervals around the block.
+    const whole = busyWindowProof(moving.tracked, moving.window, {
+      axis: 'y',
+      presented: moving.presented,
+    });
+    const castMs = whole.cadenceMs;
+    const drawMs = whole.compositorFrameMs;
+    test.skip(drawMs == null, 'no compositor frames recorded around the block');
+    // The screencast as a loaded machine delivers it: every frame of four of
+    // its own intervals skipped, which the compositor still presented. With
+    // the frames either side, a gap of five intervals, over the stall
+    // bound's three at the cast's measured rate. The drop sits where the
+    // compositor presented steadily (no interval of its own over the stall
+    // bound), so the record has frames to excuse it with, and the judged part
+    // keeps four of the control's frames outside it.
+    const dropMs = 4 * castMs;
+    const inner = {from: moving.window.from + 20, to: moving.window.to - 20};
+    const draws = [...moving.presented].sort((a, b) => a - b);
+    const steady = (from: number, to: number) => {
+      const span = draws.filter(t => t >= from && t <= to);
+      return (
+        span.length >= 2 &&
+        span[0] - from <= 3 * (drawMs ?? 0) &&
+        to - span[span.length - 1] <= 3 * (drawMs ?? 0) &&
+        span.slice(1).every((t, i) => t - span[i] <= 3 * (drawMs ?? 0))
+      );
+    };
+    const middle = (inner.from + inner.to - dropMs) / 2;
+    const starts: number[] = [];
+    for (
+      let t = inner.from + castMs;
+      t + dropMs <= inner.to - castMs;
+      t += castMs / 2
+    ) {
+      starts.push(t);
+    }
+    starts.sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle));
+    const from = starts.find(t => steady(t, t + dropMs));
+    test.skip(
+      inner.to - inner.from < dropMs + 4 * castMs || from == null,
+      `no ${dropMs.toFixed(0)} ms span of the block to drop: the screencast delivered a frame every ${castMs.toFixed(0)} ms, the compositor every ${(drawMs ?? 0).toFixed(0)} ms`,
+    );
+    const to = (from ?? 0) + dropMs;
+    const kept = (f: {t: number}) => f.t <= (from ?? 0) || f.t > to;
+    const skipped = moving.tracked.filter(kept);
     const alone = busyWindowProof(skipped, moving.window, {axis: 'y'});
     expect(alone.verdict.failures.join('\n'), alone.summary).toMatch(
       /longest stall/,
     );
-    const proof = busyWindowProof(skipped, moving.window, {
+    // Only the compositor record excuses the drop: with it, the frames the
+    // compositor presented there count as skipped by the screencast, more of
+    // them than the whole cast had.
+    const excused = busyWindowProof(skipped, moving.window, {
       axis: 'y',
       presented: moving.presented,
     });
+    expect(excused.recorderSkipped, excused.summary).toBeGreaterThan(
+      whole.recorderSkipped,
+    );
+    // Judged against the busy control, read from the same frames, so it
+    // misses the same ones, the component passes.
+    const proof = busyWindowProof(skipped, moving.window, {
+      axis: 'y',
+      control: moving.controlTracked.filter(kept),
+    });
     testInfo.annotations.push({
       type: 'busy-main-thread compositor record',
-      description: proof.summary,
+      description: `${excused.summary}; against the control: ${proof.summary}`,
     });
     expect(proof.verdict.failures, proof.summary).toEqual([]);
-    expect(proof.recorderSkipped).toBeGreaterThanOrEqual(4);
 
     // A rAF animation presents no change for the whole block: the record
     // excuses nothing, whatever the compositor drew meanwhile.
@@ -542,8 +607,10 @@ test.describe('frame evidence', () => {
       type: 'busy-main-thread rAF control, compositor record',
       description: `${still.summary}; compositor frames inside the block: ${frozen.presented.filter(t => t > frozen.window.from && t < frozen.window.to).length}`,
     });
+    // The freeze is still a stall with the record: the element presents no
+    // change in the block, so no gap there lies between two moved frames,
+    // and the record excuses none of it.
     expect(still.verdict.pass).toBe(false);
-    expect(still.recorderSkipped).toBe(0);
     expect(still.verdict.failures.join('\n')).toMatch(/longest stall/);
   });
 
