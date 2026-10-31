@@ -808,6 +808,14 @@ describe('Tokenizer sheet presentation (single-sheet touch flow)', () => {
           ),
         ).toHaveTextContent('All items removed'),
       );
+      // Exactly one live region says it: the field's own region stays silent
+      // for a Clear all the sheet already announced.
+      const saying = Array.from(
+        document.querySelectorAll(
+          '[aria-live], [role="status"], [role="alert"]',
+        ),
+      ).filter(region => region.textContent?.includes('All items removed'));
+      expect(saying).toHaveLength(1);
     } finally {
       modalSpy.mockRestore();
     }

@@ -27,6 +27,7 @@
 import React, {
   lazy,
   Suspense,
+  use,
   useCallback,
   useEffect,
   useId,
@@ -51,6 +52,7 @@ import {
   useFieldInputStyling,
 } from '../Field/fieldParts';
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {TokenizerClearAllMessageContext} from './TokenizerClearAllMessageContext';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useAdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {useIsHydrating} from '../hooks/useIsHydrating';
@@ -1223,15 +1225,27 @@ export function Tokenizer<T extends SearchableItem>({
   );
 
   // Handle clearing all items
-  const handleClearAll = useCallback(() => {
-    if (isDisabled || value.length === 0) {
-      return;
-    }
-    // Report the last item as removed (convention)
-    const lastItem = value[value.length - 1];
-    onChange([], {item: lastItem, type: 'remove'});
-    inputRef.current?.focus();
-  }, [value, onChange, isDisabled]);
+  // A composing component that words its own Clear all (PowerSearch) provides
+  // its words; otherwise the field's own (component:Tokenizer AR7).
+  const clearAllMessage =
+    use(TokenizerClearAllMessageContext) ?? t('@astryx.tokenizer.allRemoved');
+  const handleClearAll = useCallback(
+    (options?: {silent?: boolean}) => {
+      if (isDisabled || value.length === 0) {
+        return;
+      }
+      // Report the last item as removed (convention)
+      const lastItem = value[value.length - 1];
+      onChange([], {item: lastItem, type: 'remove'});
+      // Focus moves to the input, so the emptied selection is announced, in
+      // the sheet's words (WCAG 4.1.3). The sheet announces its own Clear all.
+      if (!options?.silent) {
+        announce(clearAllMessage);
+      }
+      inputRef.current?.focus();
+    },
+    [value, onChange, isDisabled, announce, clearAllMessage],
+  );
 
   // Handle backspace on empty input — remove last token
   const handleKeyDown = useCallback(
@@ -1636,7 +1650,7 @@ export function Tokenizer<T extends SearchableItem>({
               emptySearchText={emptySearchText}
               onAdd={handleAdd}
               onRemove={handleRemove}
-              onClearAll={handleClearAll}
+              onClearAll={() => handleClearAll({silent: true})}
               onChangeQuery={handleSheetQueryChange}
             />
           )}

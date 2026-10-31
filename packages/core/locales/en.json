@@ -1123,6 +1123,10 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder text inside the empty PowerSearch input. Imperative verb; trailing `…` is one character."
   },
+  "@astryx.powersearch.allFiltersRemoved": {
+    "defaultMessage": "All filters removed",
+    "description": "Screen-reader announcement after a PowerSearch field's Clear all removes every filter. Distinct from @astryx.tokenizer.allRemoved: PowerSearch words its items as filters."
+  },
   "@astryx.resizable.collapsed": {
     "defaultMessage": "Collapsed",
     "description": "aria-valuetext for the Resizable drag handle (role=separator) while its panel is collapsed to zero size. Replaces the numeric value announcement, since the numeric value is clamped to the minimum while collapsed. Adjective describing the panel state, not a verb/command."
@@ -1741,7 +1745,7 @@
   },
   "@astryx.tokenizer.allRemoved": {
     "defaultMessage": "All items removed",
-    "description": "Polite screen-reader announcement after a confirmed Clear all in a Tokenizer's bottom sheet has removed every selected item. Live-region text, never shown on screen."
+    "description": "Polite screen-reader announcement after a Tokenizer's Clear all has removed every selected item: the inline Clear all button, or a confirmed Clear all in the bottom sheet. Live-region text, never shown on screen."
   },
   "@astryx.tokenizer.selectedCount": {
     "defaultMessage": "{count, number} selected",
