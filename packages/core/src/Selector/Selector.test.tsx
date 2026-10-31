@@ -293,6 +293,13 @@ function expectSilentBusySpinner() {
   expect(screen.queryByRole('status', {name: 'Loading'})).toBeNull();
 }
 
+// The bottom sheet is loaded on demand (SelectorBottomSheet's lazy import).
+// Loading its module is not part of an open, so the file waits for it once
+// here, and each test's open waits only for the open.
+beforeAll(async () => {
+  await import('../BottomSheet/BottomSheet');
+});
+
 describe('Selector', () => {
   it('uses a bottom sheet and closes after a selection when requested', async () => {
     const user = userEvent.setup();
